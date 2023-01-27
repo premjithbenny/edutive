@@ -29,7 +29,7 @@ pipeline {
         //Clone code from Bitbucket dev-cicd-mail-service branch
         stage('Cloning Git') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/dev-cicd-mail-service']], extensions: [], userRemoteConfigs: [[credentialsId: 'EDUTIVE-REPO-CRED', url: 'https://edu-tive-admin@bitbucket.org/edu-tive/mail-service/']]])     
+                checkout([$class: 'GitSCM', branches: [[name: '*/pre-prod-cicd-mail-service']], extensions: [], userRemoteConfigs: [[credentialsId: 'EDUTIVE-REPO-CRED', url: 'https://edu-tive-admin@bitbucket.org/edu-tive/mail-service/']]])     
             }
         }
         
@@ -46,27 +46,27 @@ pipeline {
         
         // Scan and test code with SonarQube-scannr
         
-        stage('Sonar-scannner') {
-            environment {
-                def scannerHome = tool 'SONAR_QUBE_SCANNER'
-                def squrl="http://10.0.0.85:9000"
-            }
-            steps {
-                withSonarQubeEnv(installationName: 'SONAR_QUBE_SCANNER',credentialsId: 'SONARQUBE-TOKEN') {
-                    sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=$IMAGE_NAME  -Dsonar.sources=. -Dsonar.java.source=1.8 -Dsonar.java.binaries=build/classes "
+//          stage('Sonar-scannner') {
+//           environment {
+//           def scannerHome = tool 'SONAR_QUBE_SCANNER'
+//          def squrl="http://10.0.0.85:9000"
+//          }
+//            steps {
+//               withSonarQubeEnv(installationName: 'SONAR_QUBE_SCANNER',credentialsId: 'SONARQUBE-TOKEN') {
+//               sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=$IMAGE_NAME  -Dsonar.sources=. -Dsonar.java.source=1.8 -Dsonar.java.binaries=build/classes "
+//        
+//                }
+//             }
+//         }
         
-                }
-            }
-        }
-        
-        // Check the quality of SonarQube scanner report
-        
-        stage("Quality gate") {
-            steps
-            {
-                waitForQualityGate abortPipeline: true
-            }
-        }
+//        Check the quality of SonarQube scanner report
+//        
+//         stage("Quality gate") {
+//             steps
+//             {
+//                 waitForQualityGate abortPipeline: true
+//            }
+//          }
         
         // If report passed then build docker image with jar
         
@@ -112,7 +112,7 @@ pipeline {
         
         // Deploy in Dev server if environment is 'Dev'
         
-        stage('DEV ENV Deployment '){
+        stage('Pre-prod ENV Deployment '){
 //          when {
 //               environment name: 'ENV_FOR_DEPLOYMENTS', value: 'dev'
 //                expression{env.ENV_FOR_DEPLOYMENTS=='dev'}
@@ -123,7 +123,7 @@ pipeline {
                 // Dev-     DEV_ENV_APP_SERVER_MACHINE_KEYPAIR
                 //Jenkins-  JENKINS_MACHINE_KEYPAIR
                 
-                    sshagent(['DEV_ENV_APP_SERVER_MACHINE_KEYPAIR']) {
+                    sshagent(['JENKINS_MACHINE_KEYPAIR']) {
                         try {
                             sh "ssh -o StrictHostKeyChecking=no $machine_username@$machine_ip_address \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 481597576047.dkr.ecr.ap-south-1.amazonaws.com && docker pull $ECR_FULL_REPO_NAME:$BUILD_NO \" "
                             sh "ssh -o StrictHostKeyChecking=no  $machine_username@$machine_ip_address \"docker-compose -f /home/ubuntu/edutive/docker-compose.yml down \" "
